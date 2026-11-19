@@ -1,0 +1,106 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # Allows manual trigger from the GitHub Actions tab
+
+# Prevent redundant concurrent runs on active branches
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  # ==========================================================
+  # STAGE 1: Code Quality, Formatting & Static Type Analysis
+  # ==========================================================
+  validate:
+    name: Code Quality & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies (Deterministic)
+        run: npm ci
+
+      - name: Check Code Formatting (Prettier)
+        run: npm run format:check
+
+      - name: Static Type Check (TypeScript)
+        run: npm run typecheck
+
+  # ==========================================================
+  # STAGE 2: Automated Unit Testing
+  # ==========================================================
+  test:
+    name: Unit Tests & Assertions
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Unit Tests (Headless Chrome)
+        run: npm test -- --watch=false --browsers=ChromeHeadless
+
+  # ==========================================================
+  # STAGE 3: Production Build & Continuous Deployment (CD)
+  # ==========================================================
+  deploy:
+    name: Build & Deploy to GitHub Pages
+    needs: [validate, test]
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Angular for Production
+        run: npm run build -- --configuration production --base-href /cicd/
+
+      - name: Setup SPA Fallback for GitHub Pages Routing
+        run: cp dist/wedding-portal/browser/index.html dist/wedding-portal/browser/404.html
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/wedding-portal/browser
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

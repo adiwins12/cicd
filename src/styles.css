@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-champagne text-gray-800 font-sans antialiased selection:bg-gold-200 selection:text-gold-900;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-serif tracking-tight text-gray-900;
+  }
+}
+
+/* Custom Celebration Animations */
+@keyframes pulse-subtle {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 0.95;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 4s ease-in-out infinite;
+}
+
+/* Custom Scrollbar for sleek UI */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f8f4eb;
+}
+::-webkit-scrollbar-thumb {
+  background: #e1be88;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #c58634;
+}
